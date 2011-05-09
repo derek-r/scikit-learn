@@ -13,6 +13,8 @@ from ..utils.fixes import in1d
 from ..base import BaseEstimator
 from ..decomposition import PCA
 from ..cluster import KMeans
+#from ..cluster import WTAKMeans
+#from ..cluster import FALVQ
 from ..metrics.pairwise import euclidean_distances
 
 ################################################################################
@@ -322,7 +324,7 @@ class ConvolutionalKMeansEncoder(BaseEstimator):
     def __init__(self, n_centers=400, image_size=None, patch_size=6,
                  step_size=1, whiten=True, n_components=None, max_patches=1e5,
                  n_pools=2, max_iter=100, n_init=1, n_prefit=5, tol=1e-1,
-                 local_contrast=True, n_drop_components=0, verbose=False):
+                 local_contrast=True, n_drop_components=0, verbose=False, init="k-means++"):
         self.n_centers = n_centers
         self.patch_size = patch_size
         self.step_size = step_size
@@ -338,6 +340,7 @@ class ConvolutionalKMeansEncoder(BaseEstimator):
         self.verbose = verbose
         self.tol = tol
         self.n_drop_components = n_drop_components
+        self.init = init
 
     def _check_images(self, X):
         """Check that X can seen as a consistent collection of images"""
@@ -409,6 +412,12 @@ class ConvolutionalKMeansEncoder(BaseEstimator):
         kmeans = KMeans(k=self.n_centers, init='k-means++',
                         max_iter=self.max_iter, n_init=self.n_init,
                         tol=self.tol, verbose=self.verbose)
+        #kmeans = WTAKMeans(k=self.n_centers, init='random',
+        #                max_iter=self.max_iter,
+        #                tol=self.tol, verbose=self.verbose)
+        #kmeans = FALVQ(k=self.n_centers, init='random',
+        #               max_iter=self.max_iter,
+        #               tol=self.tol, verbose=self.verbose)
 
         if self.whiten:
             # whiten the patch space
@@ -500,6 +509,9 @@ class ConvolutionalKMeansEncoder(BaseEstimator):
                 # triangle features
                 distance_means = distances.mean(axis=1)[:, None]
                 features = np.maximum(0, distance_means - distances)
+
+                # fuzzy membership features
+                #features = self.kmeans.membership_from_distances(distances)
 
                 # features are pooled over image regions
                 out_r = r * self.n_pools / n_rows_adjusted
