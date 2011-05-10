@@ -36,6 +36,7 @@ import pylab as pl
 
 from scikits.learn.metrics import classification_report
 from scikits.learn.metrics import confusion_matrix
+from scikits.learn.metrics import zero_one_score
 from scikits.learn.feature_extraction.image import ConvolutionalKMeansEncoder
 from scikits.learn.svm import LinearSVC
 from scikits.learn.externals.joblib import Memory
@@ -47,7 +48,7 @@ memory = Memory(cachedir='.')
 # Learn filters from data
 
 parameters = {
-    'max_iter': 200, # max number of kmeans EM iterations
+    'max_iter': 800, # max number of kmeans EM iterations
     'n_centers': 400, # kmeans centers: convolutional filters
     'n_components': 80, # singular vectors to keep when whitening
     'n_pools': 2, # square root of number of 2D image areas for pooling
@@ -197,22 +198,33 @@ y_pred = clf.predict(X_test)
 
 print classification_report(y_test, y_pred, labels=range(len(target_names)),
                             target_names=target_names)
+print "Overall accuracy (zero-one score): %0.3fs" % zero_one_score(y_test, y_pred)
 print confusion_matrix(y_test, y_pred)
-
 
 ##############################################################################
 # Qualitative evaluation of the extracted filters
 
-def plot_filters(filters, patch_size=8, n_colors=3):
+#def plot_filters(filters, patch_size=8, n_colors=3):
+def plot_filters(filters, patch_size=8, n_colors=3, local_scaling=True):
     n_filters = filters.shape[0]
     n_row = int(math.sqrt(n_filters))
     n_col = int(math.sqrt(n_filters))
 
     filters = filters.copy()
-    filters -= filters.min()
-    filters /= filters.max()
+    if local_scaling:
+        # local rescaling filters for display with imshow
+        filters -= filters.min(axis=1).reshape((filters.shape[0], 1))
+        filters /= filters.max(axis=1).reshape((filters.shape[0], 1))
+    else:
+        # global rescaling
+        filters -= filters.min()
+        filters /= filters.max()
 
-    filters = np.array(filters * 255, dtype=np.uint8)
+#    filters = filters.copy()
+#    filters -= filters.min()
+#    filters /= filters.max()
+
+#    filters = np.array(filters * 255, dtype=np.uint8)
 
     pl.figure()
     for i in range(n_row * n_col):
@@ -222,9 +234,11 @@ def plot_filters(filters, patch_size=8, n_colors=3):
         pl.xticks(())
         pl.yticks(())
 
-    pl.show()
+    pl.savefig("output.png")
+#    pl.show()
 
 # matplotlib is slow on large number of filters: restrict to the top 100 by
 # default
-#plot_filters(extractor.filters_[:100], local_scaling=True)
+plot_filters(extractor.filters_[:100], local_scaling=True)
+#plot_filters(extractor.filters_[:100])
 

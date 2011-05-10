@@ -160,7 +160,7 @@ def falvq_learning(X, k, init='random', max_iter=1500, verbose=1,
             "'%s' (type '%s') was passed.")
 
     if verbose:
-        print 'Initialization complete'
+        print 'FALVQ Initialization complete'
     
     # average squared distance to all points
     inertia = np.mean(euclidean_distances(centers, X, squared=True))
