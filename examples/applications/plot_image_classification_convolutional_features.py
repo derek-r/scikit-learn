@@ -38,6 +38,7 @@ from scikits.learn.metrics import classification_report
 from scikits.learn.metrics import confusion_matrix
 from scikits.learn.metrics import zero_one_score
 from scikits.learn.feature_extraction.image import ConvolutionalKMeansEncoder
+from scikits.learn.svm import SVC
 from scikits.learn.svm import LinearSVC
 from scikits.learn.externals.joblib import Memory
 
@@ -48,9 +49,9 @@ memory = Memory(cachedir='.')
 # Learn filters from data
 
 parameters = {
-    'max_iter': 800, # max number of kmeans EM iterations
+    'max_iter': 1600, # max number of kmeans EM iterations
     'n_centers': 400, # kmeans centers: convolutional filters
-    'n_components': 80, # singular vectors to keep when whitening
+    'n_components': 192, # singular vectors to keep when whitening
     'n_pools': 2, # square root of number of 2D image areas for pooling
     'patch_size': 8, # size of the side of one filter
     'whiten': True, # perform whitening or not before kmeans
@@ -59,7 +60,7 @@ parameters = {
     'local_contrast': True,
     'n_pools': 2,
     'verbose': True,
-    'n_drop_components': 2,
+    'n_drop_components': 0,
     'max_patches': 100000,
 }
 
@@ -155,7 +156,7 @@ def extract_features(parameters, n_samples_train=10000, n_samples_test=5000):
     X_train, X_test, y_train, y_test, target_names = load_cifar_10(
         n_samples_train=n_samples_train, n_samples_test=n_samples_test)
 
-    extractor = build_extractor(parameters, X_train[:2000])
+    extractor = build_extractor(parameters, X_train)
 
     print "Extracting features on training set"
     t0 = time()
@@ -173,7 +174,7 @@ def extract_features(parameters, n_samples_train=10000, n_samples_test=5000):
 
 # perform the feature extraction while caching the results with joblib
 extractor, X_train, X_test, y_train, y_test, target_names = extract_features(
-    parameters, n_samples_train=50000, n_samples_test=10000)
+    parameters, n_samples_train=10000, n_samples_test=2000)
 
 print "Transformed training set in pooled conv feature space has shape:"
 print X_train.shape
@@ -186,7 +187,8 @@ print X_test.shape
 
 print "Fitting the classifier to the training set"
 t0 = time()
-clf = LinearSVC(C=0.01).fit(X_train, y_train)
+#clf = LinearSVC(C=1000).fit(X_train, y_train)
+clf = SVC(kernel='linear', C=100).fit(X_train, y_train)
 print "done in %0.3fs" % (time() - t0)
 print clf
 

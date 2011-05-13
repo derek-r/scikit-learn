@@ -12,9 +12,9 @@ from scipy import sparse
 from ..utils.fixes import in1d
 from ..base import BaseEstimator
 from ..decomposition import PCA
-#from ..cluster import KMeans
+from ..cluster import KMeans
 #from ..cluster import WTAKMeans
-from ..cluster import FALVQ
+#from ..cluster import FALVQ
 from ..metrics.pairwise import euclidean_distances
 
 ################################################################################
@@ -373,17 +373,21 @@ class ConvolutionalKMeansEncoder(BaseEstimator):
     def local_contrast_normalization(self, patches):
         """Normalize the patch-wise variance of the signal"""
         # center all colour channels together
+        import pdb; pdb.set_trace();
         patches = patches.reshape((patches.shape[0], -1))
         patches -= patches.mean(axis=1)[:, None]
 
-        patches_std = patches.std(axis=1)
+        #patches_std = patches.std(axis=1)
+        # Replicating Coates' Matlab implementation
+        patches_std = np.sqrt(patches.var(axis=1, ddof=1)[:, None]+10)
         # Cap the divisor to avoid amplifying patches that are essentially
         # a flat surface into full-contrast salt-and-pepper garbage.
         # the actual value is a wild guess
         # This trick is credited to N. Pinto
-        min_divisor = (2 * patches_std.min() + patches_std.mean()) / 3
-        patches /= np.maximum(min_divisor, patches_std).reshape(
-            (patches.shape[0], 1))
+        #min_divisor = (2 * patches_std.min() + patches_std.mean()) / 3
+        #patches /= np.maximum(min_divisor, patches_std).reshape(
+        #    (patches.shape[0], 1))
+        patches /= patches_std;
         return patches
 
     def fit(self, X):
@@ -409,15 +413,15 @@ class ConvolutionalKMeansEncoder(BaseEstimator):
         # kmeans model to find the filters
         if self.verbose:
             print "About to extract filters from %d patches" % n_patches
-        #kmeans = KMeans(k=self.n_centers, init=self.init,
-        #                max_iter=self.max_iter, n_init=self.n_init,
-        #                tol=self.tol, verbose=self.verbose)
+        kmeans = KMeans(k=self.n_centers, init=self.init,
+                        max_iter=self.max_iter, n_init=self.n_init,
+                        tol=self.tol, verbose=self.verbose)
         #kmeans = WTAKMeans(k=self.n_centers, init='random',
         #                max_iter=self.max_iter,
         #                tol=self.tol, verbose=self.verbose)
-        kmeans = FALVQ(k=self.n_centers, init='random',
-                       max_iter=self.max_iter,
-                       tol=self.tol, verbose=self.verbose)
+        #kmeans = FALVQ(k=self.n_centers, init='random',
+        #               max_iter=self.max_iter,
+        #               tol=self.tol, verbose=self.verbose)
 
         if self.whiten:
             # whiten the patch space
@@ -447,8 +451,8 @@ class ConvolutionalKMeansEncoder(BaseEstimator):
                 kmeans.init[:, :self.n_prefit] = kmeans.cluster_centers_
                 if self.verbose:
                     print "Second KMeans in full whitened patch space"
-                #kmeans.fit(patches, n_init=1)
-                kmeans.fit(patches)
+                kmeans.fit(patches, n_init=1)
+                #kmeans.fit(patches)
             else:
                 if self.verbose:
                     print "KMeans in full original patch space"
