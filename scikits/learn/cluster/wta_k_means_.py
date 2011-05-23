@@ -119,7 +119,7 @@ def wta_k_means(X, k, init='random', max_iter=1500, verbose=1,
         rng = np.random
     n_samples = X.shape[0]
 
-    vdata = np.mean(np.var(X, 0))
+    #vdata = np.mean(np.var(X, 0))
     #best_inertia = np.infty
     labels = -np.ones(n_samples).astype(np.int)
     if hasattr(init, '__array__'):
@@ -155,7 +155,7 @@ def wta_k_means(X, k, init='random', max_iter=1500, verbose=1,
     M2 = np.zeros((k,X.shape[1])).astype(np.float32)
     variance = np.zeros((k,X.shape[1])).astype(np.float32)
     # set up constant step size (suboptimal for sure)
-    stepsize = 0.15*np.min(Xmean)
+    #stepsize = 0.15*np.min(Xmean)
     # iterations
     i = 0
     while (max_iter==0 or i<=max_iter):
